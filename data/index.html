@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Data Collection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('https://www.example.com/path/to/your-image.jpg');
+            background-size: cover;
+            background-repeat: no-repeat;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #fff;
+        }
+
+        .capture-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            max-width: 640px;
+            margin: 0 auto;
+            border-radius: 5px;
+        }
+
+        video {
+            width: 640px;
+            height: 480px;
+        }
+
+        canvas {
+            display: none;
+        }
+
+        button {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+
+        .submit {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .submit:hover {
+            background-color: #555;
+        }
+
+        /* Center alignment */
+        .center-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Captured image display */
+        #capturedImage {
+            margin-top: 20px;
+            max-width: 100%;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Student Data Collection</h1>
+    
+    <div class="center-container">
+        <!-- Captured image display -->
+        <form onsubmit="submitForm(event)">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" required><br>
+            
+            <label for="roll">Roll Number:</label>
+            <input type="text" id="roll" name="roll" required><br><br>
+            
+            <div class="capture-container">
+                <video id="video" width="640" height="480" autoplay></video><br>
+                
+                <button id="capture">Capture Image</button>
+                <button id="retake" disabled>Retake Image</button><br><br>
+                
+                <canvas id="canvas" width="640" height="480"></canvas><br>
+            </div>
+            
+            <img id="capturedImage" src="" alt="Captured Image">
+
+            <input type="hidden" id="imageData" name="imageData">
+            
+            <input type="submit" value="Submit" class="submit">
+        </form>
+    </div>
+
+    <!-- Add Firebase -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/7.14.1-0/firebase.js"></script>
+    <script src="./mail.js"></script>
+
+    <script>
+        // Access the video element and getUserMedia API
+        const video = document.getElementById('video');
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                });
+        }
+
+        // Access the canvas element and the capture/retake buttons
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+        const retakeButton = document.getElementById('retake');
+        const capturedImage = document.getElementById('capturedImage');
+
+        // Function to capture image from the video stream
+        function captureImage() {
+            // Draw the video frame on the canvas
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert canvas image to base64 format
+            const imageBase64 = canvas.toDataURL('image/png');
+
+            // Store the captured image in a hidden input field
+            document.getElementById('imageData').value = imageBase64;
+
+            // Show the captured image
+            capturedImage.src = imageBase64;
+
+            // Disable capture button and enable retake button
+            captureButton.disabled = true;
+            retakeButton.disabled = false;
+        }
+
+        // Function to retake the image
+        function retakeImage() {
+            // Clear the canvas and reset the hidden input field
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            document.getElementById('imageData').value = '';
+
+            // Hide the captured image
+            capturedImage.src = '';
+
+            // Disable retake button and enable capture button
+            retakeButton.disabled = true;
+            captureButton.disabled = false;
+        }
+
+        // Attach click event listeners to the capture and retake buttons
+        captureButton.addEventListener('click', captureImage);
+        retakeButton.addEventListener('click', retakeImage);
+
+        // Function to handle form submission
+        function submitForm(event) {
+            event.preventDefault(); // Prevent the form from submitting through the default method
+
+            // Get the user-entered data
+            const name = document.getElementById('name').value;
+            const roll = document.getElementById('roll').value;
+            const imageData = document.getElementById('imageData').value;
+
+            // Send the captured data to Firebase
+            sendCapturedData(name, roll, imageData);
+
+            // Show a pop-up message
+            alert('Form submitted successfully!');
+
+            // Optionally, you can reset the form fields after submission
+            document.getElementById('name').value = '';
+            document.getElementById('roll').value = '';
+            document.getElementById('imageData').value = '';
+            retakeImage(); // Call this function to clear the captured image
+
+            // Note that the form will still be submitted, but the pop-up message will appear before that.
+        }
+    </script>
+</body>
+</html>
